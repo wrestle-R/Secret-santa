@@ -33,7 +33,7 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen pt-32 pb-20 px-6 relative overflow-hidden" style={{ backgroundColor: 'oklch(var(--background))' }}>
       <Snowfall 
-        snowflakeCount={200}
+        snowflakeCount={50}
         images={snowflakeImages}
         radius={[10, 30]}
       />
