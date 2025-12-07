@@ -80,34 +80,23 @@ const SharePage = () => {
 
     const doc = new jsPDF();
     const assignments = groupData.assignments;
-    const qrSize = 50; // mm
-    const margin = 20;
-    const spacing = 10;
+    const qrSize = 60; // mm - bigger QR code
+    const margin = 15;
+    const spacing = 9;
     const itemsPerRow = 2;
     const itemsPerCol = 3;
     const itemsPerPage = itemsPerRow * itemsPerCol;
 
-    let x = margin;
-    let y = margin;
-
     assignments.forEach((assignment, index) => {
       if (index > 0 && index % itemsPerPage === 0) {
         doc.addPage();
-        x = margin;
-        y = margin;
       }
 
       const col = index % itemsPerRow;
       const row = Math.floor((index % itemsPerPage) / itemsPerRow);
 
-      const xPos = margin + col * (qrSize + spacing + 40); // 40 is extra space for text
-      const yPos = margin + row * (qrSize + spacing + 30);
-
-      // Draw border for cutting
-      doc.setDrawColor(200);
-      doc.setLineDash([2, 2], 0);
-      doc.rect(xPos - 5, yPos - 5, qrSize + 50, qrSize + 30);
-      doc.setLineDash([]);
+      const xPos = margin + col * (qrSize + spacing + 8);
+      const yPos = margin + row * (qrSize + spacing + 20);
 
       // Add QR Code
       const qrData = qrCodes[assignment.giver]?.qr;
@@ -115,14 +104,13 @@ const SharePage = () => {
         doc.addImage(qrData, 'PNG', xPos, yPos, qrSize, qrSize);
       }
 
-      // Add Text
-      doc.setFontSize(12);
-      doc.text(`For: ${assignment.giver}`, xPos + qrSize + 5, yPos + 10);
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(`Group: ${groupData.name}`, xPos + qrSize + 5, yPos + 20);
-      doc.text("Scan to reveal!", xPos + qrSize + 5, yPos + 30);
+      // Add Text - only recipient name, max 10 chars with dots
+      doc.setFontSize(14);
       doc.setTextColor(0);
+      const displayName = assignment.giver.length > 10 
+        ? assignment.giver.substring(0, 10) + '..' 
+        : assignment.giver;
+      doc.text(displayName, xPos + qrSize / 2, yPos + qrSize + 12, { align: 'center' });
     });
 
     doc.save(`${groupData.name.replace(/\s+/g, '_')}_Secret_Santa_QRs.pdf`);
