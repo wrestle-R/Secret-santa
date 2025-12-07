@@ -18,7 +18,7 @@ const Navbar = () => {
     <div className="fixed top-6 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
       <nav className="pointer-events-auto flex items-center justify-between w-full max-w-3xl rounded-full border bg-background/80 backdrop-blur-md px-6 py-2 shadow-lg supports-[backdrop-filter]:bg-background/60">
         <Link to="/" className="flex items-center space-x-2">
-          <Gift className="h-5 w-5 text-primary" />
+          {/* <Gift className="h-5 w-5 text-primary" /> */}
           <span className="font-bold text-lg tracking-tight">Secret Santa</span>
         </Link>
         

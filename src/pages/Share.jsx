@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import QRCode from 'qrcode';
-import { Copy, CheckCircle, ArrowLeft, ExternalLink } from 'lucide-react';
+import { Copy, CheckCircle, ArrowLeft, ExternalLink, Download } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../components/ui/card';
+import jsPDF from 'jspdf';
 
 const SharePage = () => {
   const { groupId } = useParams();
@@ -74,16 +75,74 @@ const SharePage = () => {
     }, 2000);
   };
 
+  const downloadPDF = () => {
+    if (!groupData || !qrCodes) return;
+
+    const doc = new jsPDF();
+    const assignments = groupData.assignments;
+    const qrSize = 50; // mm
+    const margin = 20;
+    const spacing = 10;
+    const itemsPerRow = 2;
+    const itemsPerCol = 3;
+    const itemsPerPage = itemsPerRow * itemsPerCol;
+
+    let x = margin;
+    let y = margin;
+
+    assignments.forEach((assignment, index) => {
+      if (index > 0 && index % itemsPerPage === 0) {
+        doc.addPage();
+        x = margin;
+        y = margin;
+      }
+
+      const col = index % itemsPerRow;
+      const row = Math.floor((index % itemsPerPage) / itemsPerRow);
+
+      const xPos = margin + col * (qrSize + spacing + 40); // 40 is extra space for text
+      const yPos = margin + row * (qrSize + spacing + 30);
+
+      // Draw border for cutting
+      doc.setDrawColor(200);
+      doc.setLineDash([2, 2], 0);
+      doc.rect(xPos - 5, yPos - 5, qrSize + 50, qrSize + 30);
+      doc.setLineDash([]);
+
+      // Add QR Code
+      const qrData = qrCodes[assignment.giver]?.qr;
+      if (qrData) {
+        doc.addImage(qrData, 'PNG', xPos, yPos, qrSize, qrSize);
+      }
+
+      // Add Text
+      doc.setFontSize(12);
+      doc.text(`For: ${assignment.giver}`, xPos + qrSize + 5, yPos + 10);
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Group: ${groupData.name}`, xPos + qrSize + 5, yPos + 20);
+      doc.text("Scan to reveal!", xPos + qrSize + 5, yPos + 30);
+      doc.setTextColor(0);
+    });
+
+    doc.save(`${groupData.name.replace(/\s+/g, '_')}_Secret_Santa_QRs.pdf`);
+  };
+
   if (!groupData) return null;
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] py-12 px-4 sm:px-6 lg:px-8 bg-background text-foreground">
       <div className="max-w-4xl mx-auto space-y-8">
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate('/')} className="pl-0 hover:pl-2 transition-all">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <Button variant="ghost" onClick={() => navigate('/')} className="pl-0 hover:pl-2 transition-all self-start sm:self-auto">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Home
           </Button>
-          <h1 className="text-2xl font-bold">{groupData.name}</h1>
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+            <h1 className="text-2xl font-bold truncate mr-4">{groupData.name}</h1>
+            <Button onClick={downloadPDF} variant="outline">
+              <Download className="mr-2 h-4 w-4" /> Download PDF
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

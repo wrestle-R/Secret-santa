@@ -8,26 +8,26 @@ import { ArrowRight, Users, QrCode, Sparkles } from 'lucide-react';
 const LandingPage = () => {
   const navigate = useNavigate();
 
-  const features = [
-    {
-      icon: <Users className="h-6 w-6" />,
-      title: "Create Groups",
-      description: "Effortlessly organize your Secret Santa group with just a few clicks."
-    },
-    {
-      icon: <QrCode className="h-6 w-6" />,
-      title: "Digital Reveal",
-      description: "Share unique QR codes or links for a suspenseful digital reveal."
-    },
-    {
-      icon: <Sparkles className="h-6 w-6" />,
-      title: "Modern Experience",
-      description: "A sleek, minimalist interface designed for the modern holiday season."
-    }
-  ];
+const features = [
+  {
+    icon: <Users className="h-6 w-6" />,
+    title: "Smart Matching",
+    description: "Automatically generates fair, conflict-free pairings with no self-matches or repeats."
+  },
+  {
+    icon: <Sparkles className="h-6 w-6" />,
+    title: "Multi-Event Support",
+    description: "Create and manage multiple Secret Santa groups for friends, family, or the workplace."
+  },
+  {
+    icon: <QrCode className="h-6 w-6" />,
+    title: "Export & Share",
+    description: "Easily download participant lists or share access links for seamless coordination."
+  }
+];
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-background text-foreground">
+    <div className="min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center pb-12 px-4 sm:px-6 lg:px-8 bg-background text-foreground">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -35,12 +35,11 @@ const LandingPage = () => {
         className="text-center max-w-3xl mx-auto space-y-8"
       >
         <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight lg:text-7xl">
-          Secret Santa <span className="text-primary">Reimagined</span>
+          Secret Santa 
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          The elegant way to organize your holiday gift exchange. No clutter, just the essentials.
+The most IDIOTPROOF way to organize a secret Santa exchange
         </p>
-        
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
           <Button size="lg" onClick={() => navigate('/create')} className="text-lg px-8">
             Start Exchange <ArrowRight className="ml-2 h-5 w-5" />
