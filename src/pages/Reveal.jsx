@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Gift, Sparkles, PartyPopper, Eye, EyeOff } from 'lucide-react';
+import ElectricBorder from '../components/ElectricBorder';
 
 const RevealPage = () => {
-  const { groupId, participantIndex } = useParams();
+  const { encodedData } = useParams();
   const navigate = useNavigate();
   const [groupData, setGroupData] = useState(null);
   const [assignment, setAssignment] = useState(null);
@@ -12,22 +13,21 @@ const RevealPage = () => {
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
-    // Load group data from localStorage
-    const data = localStorage.getItem(`secretsanta_${groupId}`);
-    if (data) {
-      const parsed = JSON.parse(data);
-      setGroupData(parsed);
-      
-      const index = parseInt(participantIndex);
-      if (index >= 0 && index < parsed.assignments.length) {
-        setAssignment(parsed.assignments[index]);
-      } else {
-        navigate('/');
-      }
-    } else {
+    if (!encodedData) {
+      navigate('/');
+      return;
+    }
+
+    try {
+      // Decode the assignment data from the URL
+      const decoded = JSON.parse(decodeURIComponent(atob(encodedData)));
+      setGroupData({ groupName: decoded.gn });
+      setAssignment({ giver: decoded.g, receiver: decoded.r });
+    } catch (e) {
+      console.error("Failed to decode URL", e);
       navigate('/');
     }
-  }, [groupId, participantIndex, navigate]);
+  }, [encodedData, navigate]);
 
   const handleReveal = () => {
     setRevealed(true);
@@ -210,22 +210,24 @@ const RevealPage = () => {
                   initial={{ opacity: 0, scale: 0.5 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.6, type: "spring", stiffness: 200, damping: 15 }}
-                  className="mb-8"
+                  className="mb-8 inline-block"
                 >
-                  <div 
-                    className="inline-block px-12 py-6 rounded-2xl"
-                    style={{
-                      backgroundColor: 'oklch(var(--primary))',
-                      boxShadow: 'var(--shadow-xl)'
-                    }}
-                  >
-                    <h3 
-                      className="text-4xl md:text-5xl font-bold tracking-wide"
-                      style={{ color: 'oklch(var(--primary-foreground))' }}
+                  <ElectricBorder color="oklch(var(--accent))" speed={2} chaos={0.5}>
+                    <div 
+                      className="inline-block px-12 py-6 rounded-2xl relative z-10"
+                      style={{
+                        backgroundColor: 'oklch(var(--primary))',
+                        boxShadow: 'var(--shadow-xl)'
+                      }}
                     >
-                      {assignment.receiver}
-                    </h3>
-                  </div>
+                      <h3 
+                        className="text-4xl md:text-5xl font-bold tracking-wide"
+                        style={{ color: 'oklch(var(--primary-foreground))' }}
+                      >
+                        {assignment.receiver}
+                      </h3>
+                    </div>
+                  </ElectricBorder>
                 </motion.div>
 
                 <motion.div
@@ -249,6 +251,17 @@ const RevealPage = () => {
                     style={{ color: 'oklch(var(--accent))' }}
                   />
                 </motion.div>
+
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.2 }}
+                  onClick={() => navigate('/create')}
+                  className="mt-4 text-sm underline opacity-70 hover:opacity-100 transition-opacity"
+                  style={{ color: 'oklch(var(--muted-foreground))' }}
+                >
+                  Create your own Secret Santa group
+                </motion.button>
 
                 <motion.div
                   initial={{ opacity: 0 }}

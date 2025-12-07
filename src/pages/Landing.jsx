@@ -170,48 +170,6 @@ const LandingPage = () => {
           </div>
         </motion.div>
 
-        {/* Footer CTA */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.6, duration: 0.6 }}
-          className="mt-16 sm:mt-20 text-center"
-        >
-          <div 
-            className="p-8 sm:p-10 md:p-12 rounded-3xl max-w-3xl mx-auto mx-6"
-            style={{
-              backgroundColor: 'oklch(var(--card))',
-              border: '1px solid oklch(var(--border))',
-              boxShadow: 'var(--shadow-xl)'
-            }}
-          >
-            <h3 
-              className="text-2xl sm:text-3xl font-bold mb-4 tracking-wide"
-              style={{ color: 'oklch(var(--foreground))' }}
-            >
-              Ready to spread the joy?
-            </h3>
-            <p 
-              className="text-base sm:text-lg mb-6 sm:mb-8 tracking-wide px-2"
-              style={{ color: 'oklch(var(--muted-foreground))' }}
-            >
-              Start organizing your Secret Santa gift exchange now!
-            </p>
-            <motion.button
-              onClick={() => navigate('/create')}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-semibold tracking-wide"
-              style={{
-                backgroundColor: 'oklch(var(--primary))',
-                color: 'oklch(var(--primary-foreground))',
-                boxShadow: 'var(--shadow-lg)'
-              }}
-            >
-              Get Started
-            </motion.button>
-          </div>
-        </motion.div>
       </div>
     </div>
   );

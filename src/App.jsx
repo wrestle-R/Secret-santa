@@ -17,7 +17,7 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/create" element={<CreateGroupPage />} />
             <Route path="/share/:groupId" element={<SharePage />} />
-            <Route path="/reveal/:groupId/:participantIndex" element={<RevealPage />} />
+            <Route path="/reveal/:encodedData" element={<RevealPage />} />
           </Routes>
         </div>
       </Router>

@@ -30,7 +30,16 @@ const SharePage = () => {
 
     for (let i = 0; i < data.assignments.length; i++) {
       const assignment = data.assignments[i];
-      const url = `${baseUrl}/reveal/${groupId}/${i}`;
+      
+      // Encode assignment data for the URL so it works across devices
+      const payload = {
+        g: assignment.giver,
+        r: assignment.receiver,
+        gn: data.groupName
+      };
+      // Simple base64 encoding (safe for URL if we use encodeURIComponent first)
+      const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
+      const url = `${baseUrl}/reveal/${encoded}`;
       
       try {
         const qrDataUrl = await QRCode.toDataURL(url, {
