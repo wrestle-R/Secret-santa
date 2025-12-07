@@ -11,14 +11,16 @@ function App() {
   return (
     <ThemeProvider>
       <Router>
-        <div className="min-h-screen" style={{ backgroundColor: 'oklch(var(--background))' }}>
+        <div className="min-h-screen bg-background font-sans antialiased relative">
           <Navbar />
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/create" element={<CreateGroupPage />} />
-            <Route path="/share/:groupId" element={<SharePage />} />
-            <Route path="/reveal/:encodedData" element={<RevealPage />} />
-          </Routes>
+          <main className="pt-24 pb-8">
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/create" element={<CreateGroupPage />} />
+              <Route path="/share/:groupId" element={<SharePage />} />
+              <Route path="/reveal/:encodedData" element={<RevealPage />} />
+            </Routes>
+          </main>
         </div>
       </Router>
     </ThemeProvider>

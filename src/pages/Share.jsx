@@ -1,8 +1,10 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import QRCode from 'qrcode';
-import { Printer, Download, Share2, Copy, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Copy, CheckCircle, ArrowLeft, ExternalLink } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../components/ui/card';
 
 const SharePage = () => {
   const { groupId } = useParams();
@@ -10,17 +12,24 @@ const SharePage = () => {
   const [groupData, setGroupData] = useState(null);
   const [qrCodes, setQrCodes] = useState({});
   const [copied, setCopied] = useState({});
-  const qrContainerRef = useRef(null);
 
   useEffect(() => {
     // Load group data from localStorage
-    const data = localStorage.getItem(`secretsanta_${groupId}`);
+    const data = localStorage.getItem(`group_${groupId}`);
     if (data) {
       const parsed = JSON.parse(data);
       setGroupData(parsed);
       generateQRCodes(parsed);
     } else {
-      navigate('/create');
+      // Try the old key just in case or redirect
+      const oldData = localStorage.getItem(`secretsanta_${groupId}`);
+      if (oldData) {
+         const parsed = JSON.parse(oldData);
+         setGroupData(parsed);
+         generateQRCodes(parsed);
+      } else {
+         navigate('/create');
+      }
     }
   }, [groupId, navigate]);
 
@@ -31,13 +40,12 @@ const SharePage = () => {
     for (let i = 0; i < data.assignments.length; i++) {
       const assignment = data.assignments[i];
       
-      // Encode assignment data for the URL so it works across devices
       const payload = {
         g: assignment.giver,
         r: assignment.receiver,
-        gn: data.groupName
+        gn: data.name
       };
-      // Simple base64 encoding (safe for URL if we use encodeURIComponent first)
+      
       const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
       const url = `${baseUrl}/reveal/${encoded}`;
       
@@ -50,255 +58,87 @@ const SharePage = () => {
             light: '#FFFFFF'
           }
         });
-        codes[assignment.giver] = {
-          qrCode: qrDataUrl,
-          url: url
-        };
+        codes[assignment.giver] = { url, qr: qrDataUrl };
       } catch (err) {
-        console.error('Error generating QR code:', err);
+        console.error(err);
       }
     }
-    
     setQrCodes(codes);
   };
 
-  const handlePrint = () => {
-    window.print();
+  const copyToClipboard = (text, giver) => {
+    navigator.clipboard.writeText(text);
+    setCopied({ ...copied, [giver]: true });
+    setTimeout(() => {
+      setCopied({ ...copied, [giver]: false });
+    }, 2000);
   };
 
-  const handleDownloadAll = () => {
-    if (!groupData) return;
-
-    groupData.assignments.forEach((assignment, index) => {
-      const qrData = qrCodes[assignment.giver];
-      if (qrData) {
-        const link = document.createElement('a');
-        link.download = `${groupData.groupName}_${assignment.giver}_QR.png`;
-        link.href = qrData.qrCode;
-        link.click();
-      }
-    });
-  };
-
-  const copyToClipboard = async (name, url) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied({ ...copied, [name]: true });
-      setTimeout(() => {
-        setCopied({ ...copied, [name]: false });
-      }, 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
-
-  if (!groupData) {
-    return (
-      <div className="min-h-screen pt-32 flex items-center justify-center" style={{ backgroundColor: 'oklch(var(--background))' }}>
-        <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full" style={{ borderColor: 'oklch(var(--primary))', borderTopColor: 'transparent' }}></div>
-      </div>
-    );
-  }
+  if (!groupData) return null;
 
   return (
-    <div className="min-h-screen pt-32 pb-20 px-6" style={{ backgroundColor: 'oklch(var(--background))' }}>
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <h1 
-            className="text-4xl md:text-5xl font-bold mb-4 tracking-wide"
-            style={{ color: 'oklch(var(--foreground))' }}
-          >
-            {groupData.groupName}
-          </h1>
-          
-          <p 
-            className="text-lg tracking-wide mb-8"
-            style={{ color: 'oklch(var(--muted-foreground))' }}
-          >
-            {groupData.assignments.length} participants • QR codes generated
-          </p>
+    <div className="min-h-[calc(100vh-3.5rem)] py-12 px-4 sm:px-6 lg:px-8 bg-background text-foreground">
+      <div className="max-w-4xl mx-auto space-y-8">
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" onClick={() => navigate('/')} className="pl-0 hover:pl-2 transition-all">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Home
+          </Button>
+          <h1 className="text-2xl font-bold">{groupData.name}</h1>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-4 justify-center no-print">
-            <motion.button
-              onClick={handlePrint}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-6 py-3 rounded-full font-medium tracking-wide inline-flex items-center gap-2"
-              style={{
-                backgroundColor: 'oklch(var(--primary))',
-                color: 'oklch(var(--primary-foreground))',
-                boxShadow: 'var(--shadow-md)'
-              }}
-            >
-              <Printer className="w-5 h-5" />
-              Print All
-            </motion.button>
-
-            <motion.button
-              onClick={handleDownloadAll}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-6 py-3 rounded-full font-medium tracking-wide inline-flex items-center gap-2"
-              style={{
-                backgroundColor: 'oklch(var(--secondary))',
-                color: 'oklch(var(--secondary-foreground))',
-                boxShadow: 'var(--shadow-md)'
-              }}
-            >
-              <Download className="w-5 h-5" />
-              Download All
-            </motion.button>
-
-            <motion.button
-              onClick={() => navigate('/')}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-6 py-3 rounded-full font-medium tracking-wide inline-flex items-center gap-2"
-              style={{
-                backgroundColor: 'oklch(var(--muted))',
-                color: 'oklch(var(--foreground))',
-                border: '1px solid oklch(var(--border))'
-              }}
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Back to Home
-            </motion.button>
-          </div>
-        </motion.div>
-
-        {/* QR Codes Grid */}
-        <div ref={qrContainerRef} className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {groupData.assignments.map((assignment, index) => (
             <motion.div
               key={index}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1, duration: 0.4 }}
-              className="p-6 rounded-2xl break-inside-avoid page-break-inside-avoid"
-              style={{
-                backgroundColor: 'oklch(var(--card))',
-                border: '2px solid oklch(var(--border))',
-                boxShadow: 'var(--shadow-lg)'
-              }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
             >
-              {/* Participant Name */}
-              <h3 
-                className="text-xl font-bold mb-4 text-center tracking-wide"
-                style={{ color: 'oklch(var(--foreground))' }}
-              >
-                {assignment.giver}
-              </h3>
-
-              {/* QR Code */}
-              {qrCodes[assignment.giver] && (
-                <div className="bg-white p-4 rounded-xl mb-4 flex items-center justify-center">
-                  <img 
-                    src={qrCodes[assignment.giver].qrCode} 
-                    alt={`QR Code for ${assignment.giver}`}
-                    className="w-full max-w-[250px]"
-                  />
-                </div>
-              )}
-
-              {/* Instructions */}
-              <p 
-                className="text-sm text-center mb-4 tracking-wide"
-                style={{ color: 'oklch(var(--muted-foreground))' }}
-              >
-                Scan this QR code to reveal your Secret Santa match!
-              </p>
-
-              {/* Share Link Button */}
-              <div className="no-print">
-                <motion.button
-                  onClick={() => copyToClipboard(assignment.giver, qrCodes[assignment.giver]?.url)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full py-2 rounded-xl font-medium tracking-wide inline-flex items-center justify-center gap-2"
-                  style={{
-                    backgroundColor: copied[assignment.giver] 
-                      ? 'oklch(var(--accent))' 
-                      : 'oklch(var(--muted))',
-                    color: copied[assignment.giver]
-                      ? 'oklch(var(--accent-foreground))'
-                      : 'oklch(var(--foreground))',
-                    border: '1px solid oklch(var(--border))'
-                  }}
-                >
-                  {copied[assignment.giver] ? (
-                    <>
-                      <CheckCircle className="w-4 h-4" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4" />
-                      Copy Link
-                    </>
+              <Card className="overflow-hidden border-border/50 hover:border-primary/50 transition-colors">
+                <CardHeader className="bg-muted/30 pb-4">
+                  <CardTitle className="text-lg flex items-center justify-between">
+                    <span>For: <span className="text-primary">{assignment.giver}</span></span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6 flex flex-col items-center space-y-4">
+                  {qrCodes[assignment.giver] && (
+                    <div className="bg-white p-2 rounded-lg shadow-sm">
+                      <img 
+                        src={qrCodes[assignment.giver].qr} 
+                        alt={`QR Code for ${assignment.giver}`}
+                        className="w-48 h-48 object-contain"
+                      />
+                    </div>
                   )}
-                </motion.button>
-              </div>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Scan to reveal your match
+                  </p>
+                </CardContent>
+                <CardFooter className="bg-muted/30 flex gap-2 pt-4">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => copyToClipboard(qrCodes[assignment.giver]?.url, assignment.giver)}
+                  >
+                    {copied[assignment.giver] ? (
+                      <><CheckCircle className="mr-2 h-4 w-4 text-green-500" /> Copied</>
+                    ) : (
+                      <><Copy className="mr-2 h-4 w-4" /> Copy Link</>
+                    )}
+                  </Button>
+                  <Button 
+                    variant="secondary"
+                    size="icon"
+                    onClick={() => window.open(qrCodes[assignment.giver]?.url, '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </CardFooter>
+              </Card>
             </motion.div>
           ))}
         </div>
-
-        {/* Instructions */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6, duration: 0.6 }}
-          className="mt-12 p-8 rounded-2xl no-print"
-          style={{
-            backgroundColor: 'oklch(var(--muted) / 0.5)',
-            border: '1px solid oklch(var(--border))'
-          }}
-        >
-          <h3 
-            className="text-xl font-bold mb-4 tracking-wide"
-            style={{ color: 'oklch(var(--foreground))' }}
-          >
-            📋 Next Steps
-          </h3>
-          <ul 
-            className="space-y-2 tracking-wide"
-            style={{ color: 'oklch(var(--muted-foreground))' }}
-          >
-            <li>• Print the QR codes or share the links with each participant</li>
-            <li>• Each person should scan ONLY their own QR code</li>
-            <li>• The QR code will reveal who they're buying a gift for</li>
-            <li>• Keep it secret and have fun! 🎁</li>
-          </ul>
-        </motion.div>
       </div>
-
-      {/* Print Styles */}
-      <style>{`
-        @media print {
-          .no-print {
-            display: none !important;
-          }
-          
-          body {
-            background: white !important;
-          }
-          
-          .page-break-inside-avoid {
-            page-break-inside: avoid;
-            break-inside: avoid;
-          }
-          
-          @page {
-            margin: 1cm;
-          }
-        }
-      `}</style>
     </div>
   );
 };

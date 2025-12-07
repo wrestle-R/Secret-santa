@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X, Users, Sparkles, ArrowRight } from 'lucide-react';
+import { Plus, X, ArrowRight, Trash2 } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../components/ui/card';
 
 const CreateGroupPage = () => {
   const navigate = useNavigate();
@@ -51,258 +55,134 @@ const CreateGroupPage = () => {
       }
       
       if (isValid) {
-        assignments = names.map((giver, index) => ({
-          giver,
+        assignments = names.map((name, index) => ({
+          giver: name,
           receiver: shuffled[index]
         }));
       }
     }
-    
     return assignments;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setError('');
-
-    // Validation
+  const handleSubmit = () => {
     if (!groupName.trim()) {
       setError('Please enter a group name');
       return;
     }
 
     const validParticipants = participants.filter(p => p.trim() !== '');
+    if (validParticipants.length < 3) {
+      setError('You need at least 3 participants for Secret Santa');
+      return;
+    }
+
+    const assignments = createSecretSantaAssignments(validParticipants);
     
-    if (validParticipants.length < 2) {
-      setError('You need at least 2 participants');
-      return;
-    }
+    // Create a unique ID for the group (in a real app this would be from DB)
+    const groupId = Math.random().toString(36).substring(2, 15);
+    
+    // Store in localStorage for demo purposes
+    localStorage.setItem(`group_${groupId}`, JSON.stringify({
+      id: groupId,
+      name: groupName,
+      assignments
+    }));
 
-    // Check for duplicate names
-    const uniqueNames = new Set(validParticipants.map(p => p.trim().toLowerCase()));
-    if (uniqueNames.size !== validParticipants.length) {
-      setError('All participant names must be unique');
-      return;
-    }
-
-    // Create assignments
-    const assignments = createSecretSantaAssignments(validParticipants.map(p => p.trim()));
-
-    // Store in localStorage and navigate to share page
-    const groupData = {
-      groupName: groupName.trim(),
-      participants: validParticipants.map(p => p.trim()),
-      assignments,
-      createdAt: new Date().toISOString(),
-      groupId: Date.now().toString()
-    };
-
-    localStorage.setItem(`secretsanta_${groupData.groupId}`, JSON.stringify(groupData));
-    navigate(`/share/${groupData.groupId}`);
+    navigate(`/share/${groupId}`);
   };
 
   return (
-    <div className="min-h-screen pt-32 pb-20 px-6" style={{ backgroundColor: 'oklch(var(--background))' }}>
-      <div className="max-w-3xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          {/* Header */}
-          <div className="text-center mb-12">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
-              className="inline-block mb-4"
-            >
-              <Users 
-                className="w-16 h-16 mx-auto" 
-                style={{ color: 'oklch(var(--primary))' }}
+    <div className="min-h-[calc(100vh-3.5rem)] py-12 px-4 sm:px-6 lg:px-8 bg-background text-foreground flex justify-center">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-2xl"
+      >
+        <Card className="border-border/50 shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-3xl font-bold text-center">Create Group</CardTitle>
+            <CardDescription className="text-center">
+              Enter your group details to get started.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="groupName">Group Name</Label>
+              <Input
+                id="groupName"
+                placeholder="e.g. Office Party 2025"
+                value={groupName}
+                onChange={(e) => {
+                  setGroupName(e.target.value);
+                  setError('');
+                }}
+                className="text-lg"
               />
-            </motion.div>
-            
-            <h1 
-              className="text-4xl md:text-5xl font-bold mb-4 tracking-wide"
-              style={{ color: 'oklch(var(--foreground))' }}
-            >
-              Create Secret Santa Group
-            </h1>
-            
-            <p 
-              className="text-lg tracking-wide"
-              style={{ color: 'oklch(var(--muted-foreground))' }}
-            >
-              Set up your group and add participants
-            </p>
-          </div>
+            </div>
 
-          {/* Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-            className="p-8 rounded-3xl"
-            style={{
-              backgroundColor: 'oklch(var(--card))',
-              border: '1px solid oklch(var(--border))',
-              boxShadow: 'var(--shadow-xl)'
-            }}
-          >
-            <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Group Name */}
-              <div>
-                <label 
-                  className="block text-sm font-semibold mb-2 tracking-wide"
-                  style={{ color: 'oklch(var(--foreground))' }}
-                >
-                  Group Name
-                </label>
-                <input
-                  type="text"
-                  value={groupName}
-                  onChange={(e) => setGroupName(e.target.value)}
-                  placeholder="e.g., Office Secret Santa 2024"
-                  className="w-full px-4 py-3 rounded-xl tracking-wide outline-none focus:ring-2 transition-all"
-                  style={{
-                    backgroundColor: 'oklch(var(--input))',
-                    color: 'oklch(var(--foreground))',
-                    border: '1px solid oklch(var(--border))',
-                    '--tw-ring-color': 'oklch(var(--ring))'
-                  }}
-                />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Participants</Label>
+                <span className="text-xs text-muted-foreground">Min. 3 people</span>
               </div>
-
-              {/* Participants */}
-              <div>
-                <label 
-                  className="block text-sm font-semibold mb-4 tracking-wide"
-                  style={{ color: 'oklch(var(--foreground))' }}
-                >
-                  Participants (minimum 2)
-                </label>
-                
-                <div className="space-y-3">
-                  <AnimatePresence>
-                    {participants.map((participant, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ duration: 0.2 }}
-                        className="flex gap-2"
-                      >
-                        <input
-                          type="text"
-                          value={participant}
-                          onChange={(e) => updateParticipant(index, e.target.value)}
-                          placeholder={`Participant ${index + 1}`}
-                          className="flex-1 px-4 py-3 rounded-xl tracking-wide outline-none focus:ring-2 transition-all"
-                          style={{
-                            backgroundColor: 'oklch(var(--input))',
-                            color: 'oklch(var(--foreground))',
-                            border: '1px solid oklch(var(--border))',
-                            '--tw-ring-color': 'oklch(var(--ring))'
-                          }}
-                        />
-                        {participants.length > 2 && (
-                          <motion.button
-                            type="button"
-                            onClick={() => removeParticipant(index)}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="p-3 rounded-xl"
-                            style={{
-                              backgroundColor: 'oklch(var(--destructive) / 0.1)',
-                              color: 'oklch(var(--destructive))'
-                            }}
-                          >
-                            <X className="w-5 h-5" />
-                          </motion.button>
-                        )}
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-
-                <motion.button
-                  type="button"
-                  onClick={addParticipant}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="mt-4 w-full py-3 rounded-xl font-medium tracking-wide inline-flex items-center justify-center gap-2"
-                  style={{
-                    backgroundColor: 'oklch(var(--secondary))',
-                    color: 'oklch(var(--secondary-foreground))',
-                    border: '1px solid oklch(var(--border))'
-                  }}
-                >
-                  <Plus className="w-5 h-5" />
-                  Add Participant
-                </motion.button>
-              </div>
-
-              {/* Error Message */}
+              
               <AnimatePresence>
-                {error && (
+                {participants.map((participant, index) => (
                   <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="p-4 rounded-xl"
-                    style={{
-                      backgroundColor: 'oklch(var(--destructive) / 0.1)',
-                      color: 'oklch(var(--destructive))',
-                      border: '1px solid oklch(var(--destructive) / 0.3)'
-                    }}
+                    key={index}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex gap-2"
                   >
-                    {error}
+                    <Input
+                      placeholder={`Participant ${index + 1}`}
+                      value={participant}
+                      onChange={(e) => updateParticipant(index, e.target.value)}
+                    />
+                    {participants.length > 2 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeParticipant(index)}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </motion.div>
-                )}
+                ))}
               </AnimatePresence>
 
-              {/* Submit Button */}
-              <motion.button
-                type="submit"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full py-4 rounded-xl text-lg font-semibold tracking-wide inline-flex items-center justify-center gap-2"
-                style={{
-                  backgroundColor: 'oklch(var(--primary))',
-                  color: 'oklch(var(--primary-foreground))',
-                  boxShadow: 'var(--shadow-lg)'
-                }}
+              <Button
+                variant="outline"
+                onClick={addParticipant}
+                className="w-full border-dashed"
               >
-                <Sparkles className="w-5 h-5" />
-                Generate QR Codes
-                <ArrowRight className="w-5 h-5" />
-              </motion.button>
-            </form>
-          </motion.div>
+                <Plus className="mr-2 h-4 w-4" /> Add Participant
+              </Button>
+            </div>
 
-          {/* Info Card */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-            className="mt-8 p-6 rounded-2xl"
-            style={{
-              backgroundColor: 'oklch(var(--muted) / 0.5)',
-              border: '1px solid oklch(var(--border))'
-            }}
-          >
-            <p 
-              className="text-sm tracking-wide"
-              style={{ color: 'oklch(var(--muted-foreground))' }}
+            {error && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-sm text-destructive text-center font-medium"
+              >
+                {error}
+              </motion.p>
+            )}
+          </CardContent>
+          <CardFooter>
+            <Button 
+              className="w-full text-lg h-12" 
+              onClick={handleSubmit}
             >
-              💡 <strong>Tip:</strong> After creating the group, you'll get unique QR codes for each participant. 
-              They can scan their code to reveal who they're giving a gift to!
-            </p>
-          </motion.div>
-        </motion.div>
-      </div>
+              Create & Generate Links <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </CardFooter>
+        </Card>
+      </motion.div>
     </div>
   );
 };
