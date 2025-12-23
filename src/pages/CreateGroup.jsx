@@ -79,6 +79,13 @@ const CreateGroupPage = () => {
       return;
     }
 
+    // Check for duplicate names
+    const uniqueParticipants = new Set(validParticipants.map(p => p.trim()));
+    if (uniqueParticipants.size !== validParticipants.length) {
+      setError('Participant names must be unique. Please remove duplicates.');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
