@@ -4,29 +4,44 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Gift, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../components/ui/card';
+import { db } from '../config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 const RevealPage = () => {
-  const { encodedData } = useParams();
+  const { assignmentId } = useParams();
   const navigate = useNavigate();
   const [groupData, setGroupData] = useState(null);
   const [assignment, setAssignment] = useState(null);
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
-    if (!encodedData) {
-      navigate('/');
-      return;
-    }
+    const fetchAssignment = async () => {
+      if (!assignmentId) {
+        navigate('/');
+        return;
+      }
 
-    try {
-      const decoded = JSON.parse(decodeURIComponent(atob(encodedData)));
-      setGroupData({ groupName: decoded.gn });
-      setAssignment({ giver: decoded.g, receiver: decoded.r });
-    } catch (e) {
-      console.error("Failed to decode URL", e);
-      navigate('/');
-    }
-  }, [encodedData, navigate]);
+      try {
+        const docRef = doc(db, 'assignments', assignmentId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setGroupData({ groupName: data.groupName });
+          setAssignment({ giver: data.giver, receiver: data.receiver });
+        } else {
+          console.error("No such assignment!");
+          navigate('/');
+        }
+
+      } catch (e) {
+        console.error("Error fetching assignment", e);
+        navigate('/');
+      }
+    };
+
+    fetchAssignment();
+  }, [assignmentId, navigate]);
 
   const handleReveal = () => {
     setRevealed(true);

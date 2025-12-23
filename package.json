@@ -14,6 +14,7 @@
     "@tailwindcss/vite": "^4.1.17",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "firebase": "^12.7.0",
     "framer-motion": "^12.23.25",
     "jspdf": "^3.0.4",
     "lucide-react": "^0.555.0",

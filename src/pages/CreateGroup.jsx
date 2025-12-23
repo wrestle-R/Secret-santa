@@ -6,12 +6,15 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../components/ui/card';
+import { db } from '../config/firebase';
+import { collection, addDoc, writeBatch, doc } from 'firebase/firestore';
 
 const CreateGroupPage = () => {
   const navigate = useNavigate();
   const [groupName, setGroupName] = useState('');
   const [participants, setParticipants] = useState(['', '']);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const addParticipant = () => {
     setParticipants([...participants, '']);
@@ -64,7 +67,7 @@ const CreateGroupPage = () => {
     return assignments;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!groupName.trim()) {
       setError('Please enter a group name');
       return;
@@ -76,19 +79,48 @@ const CreateGroupPage = () => {
       return;
     }
 
-    const assignments = createSecretSantaAssignments(validParticipants);
-    
-    // Create a unique ID for the group (in a real app this would be from DB)
-    const groupId = Math.random().toString(36).substring(2, 15);
-    
-    // Store in localStorage for demo purposes
-    localStorage.setItem(`group_${groupId}`, JSON.stringify({
-      id: groupId,
-      name: groupName,
-      assignments
-    }));
+    setIsLoading(true);
+    setError('');
 
-    navigate(`/share/${groupId}`);
+    try {
+      const assignments = createSecretSantaAssignments(validParticipants);
+      
+      // Create group in Firestore
+      const groupRef = await addDoc(collection(db, 'groups'), {
+        name: groupName,
+        createdAt: new Date()
+      });
+
+      // Create assignments in Firestore
+      const batch = writeBatch(db);
+      
+      assignments.forEach(assignment => {
+        const assignmentRef = doc(collection(db, 'assignments'));
+        batch.set(assignmentRef, {
+          groupId: groupRef.id,
+          groupName: groupName,
+          giver: assignment.giver,
+          receiver: assignment.receiver,
+          createdAt: new Date()
+        });
+      });
+
+      await batch.commit();
+
+      navigate(`/share/${groupRef.id}`);
+    } catch (err) {
+      console.error("Error creating group: ", err);
+      // Check for common Firebase errors
+      if (err.code === 'permission-denied') {
+        setError("Permission denied. Please check your Firestore security rules.");
+      } else if (err.code === 'unavailable') {
+        setError("Network error. Please check your internet connection.");
+      } else {
+        setError(`Failed to create group: ${err.message}`);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -177,8 +209,18 @@ const CreateGroupPage = () => {
             <Button 
               className="w-full text-lg h-12" 
               onClick={handleSubmit}
+              disabled={isLoading}
             >
-              Create & Generate Links <ArrowRight className="ml-2 h-5 w-5" />
+              {isLoading ? (
+                <span className="flex items-center">
+                  <span className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"></span>
+                  Creating...
+                </span>
+              ) : (
+                <>
+                  Create & Generate Links <ArrowRight className="ml-2 h-5 w-5" />
+                </>
+              )}
             </Button>
           </CardFooter>
         </Card>

@@ -6,6 +6,8 @@ import { Copy, CheckCircle, ArrowLeft, ExternalLink, Download } from 'lucide-rea
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../components/ui/card';
 import jsPDF from 'jspdf';
+import { db } from '../config/firebase';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 
 const SharePage = () => {
   const { groupId } = useParams();
@@ -15,22 +17,41 @@ const SharePage = () => {
   const [copied, setCopied] = useState({});
 
   useEffect(() => {
-    // Load group data from localStorage
-    const data = localStorage.getItem(`group_${groupId}`);
-    if (data) {
-      const parsed = JSON.parse(data);
-      setGroupData(parsed);
-      generateQRCodes(parsed);
-    } else {
-      // Try the old key just in case or redirect
-      const oldData = localStorage.getItem(`secretsanta_${groupId}`);
-      if (oldData) {
-         const parsed = JSON.parse(oldData);
-         setGroupData(parsed);
-         generateQRCodes(parsed);
-      } else {
-         navigate('/create');
+    const fetchGroupData = async () => {
+      try {
+        const groupRef = doc(db, 'groups', groupId);
+        const groupSnap = await getDoc(groupRef);
+        
+        if (groupSnap.exists()) {
+          const groupData = groupSnap.data();
+          
+          const q = query(collection(db, 'assignments'), where("groupId", "==", groupId));
+          const querySnapshot = await getDocs(q);
+          
+          const assignments = [];
+          querySnapshot.forEach((doc) => {
+            assignments.push({ id: doc.id, ...doc.data() });
+          });
+          
+          const fullData = {
+            id: groupId,
+            name: groupData.name,
+            assignments: assignments
+          };
+          
+          setGroupData(fullData);
+          generateQRCodes(fullData);
+        } else {
+          navigate('/create');
+        }
+      } catch (err) {
+        console.error("Error fetching group:", err);
+        navigate('/create');
       }
+    };
+
+    if (groupId) {
+      fetchGroupData();
     }
   }, [groupId, navigate]);
 
@@ -41,14 +62,8 @@ const SharePage = () => {
     for (let i = 0; i < data.assignments.length; i++) {
       const assignment = data.assignments[i];
       
-      const payload = {
-        g: assignment.giver,
-        r: assignment.receiver,
-        gn: data.name
-      };
-      
-      const encoded = btoa(encodeURIComponent(JSON.stringify(payload)));
-      const url = `${baseUrl}/reveal/${encoded}`;
+      // Use assignment ID directly - no encryption
+      const url = `${baseUrl}/reveal/${assignment.id}`;
       
       try {
         const qrDataUrl = await QRCode.toDataURL(url, {
